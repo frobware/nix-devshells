@@ -3,39 +3,37 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    systems.url = "github:nix-systems/default";
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, systems, ... }: let
+    forEachSystem = nixpkgs.lib.genAttrs (import systems);
 
-  let
-    systems = [ "x86_64-linux" "aarch64-linux" ];
-    forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
+    mkDevShell = system: let
+      pkgs = import nixpkgs { inherit system; };
+    in pkgs.mkShell {
+      nativeBuildInputs = [
+        pkgs.just
+
+        pkgs.bcc
+        pkgs.bpftools
+        pkgs.elfutils
+        pkgs.libbpf
+        pkgs.linuxHeaders
+        pkgs.llvmPackages.clang-unwrapped
+      ];
+
+      hardeningDisable = [ "all" ];
+
+      shellHook = ''
+        export CC=${pkgs.llvmPackages.clang-unwrapped}/bin/clang
+        export CFLAGS="-I${pkgs.linuxHeaders}/include -I${pkgs.libbpf}/include"
+        echo CFLAGS=$CFLAGS
+      '';
+    };
   in {
-    devShells = forAllSystems (system: let
-      pkgs = (import nixpkgs { inherit system; });
-    in {
-      default = pkgs.mkShell {
-        nativeBuildInputs = [
-          pkgs.just
-
-          pkgs.bcc
-          pkgs.bpftools
-          pkgs.elfutils
-          pkgs.libbpf
-          pkgs.linuxHeaders
-          pkgs.llvmPackages.clang-unwrapped
-        ];
-
-        hardeningDisable = [
-          "all"
-        ];
-
-        shellHook = ''
-          export CC=${pkgs.llvmPackages.clang-unwrapped}/bin/clang
-          export CFLAGS="-I${pkgs.linuxHeaders}/include -I${pkgs.libbpf}/include"
-          echo $CFLAGS
-        '';
-      };
+    devShells = forEachSystem (system: {
+      default = mkDevShell system;
     });
   };
 }
