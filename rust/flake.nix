@@ -4,18 +4,15 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    systems.url = "github:nix-systems/default";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, ... }:
+  outputs = { self, nixpkgs, rust-overlay, systems, ... }:
   let
-    supportedSystems = [
-      "x86_64-linux"
-      "aarch64-darwin"
-    ];
+    forEachSystem = nixpkgs.lib.genAttrs (import systems);
 
-    forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
-
-    mkDevShell = system: let
+    mkDevShell = system:
+    let
       overlays = [ (import rust-overlay) ];
       pkgs = import nixpkgs {
         inherit system overlays;
@@ -98,7 +95,7 @@
       '';
     };
   in {
-    devShells = forAllSystems (system: {
+    devShells = forEachSystem (system: {
       default = mkDevShell system;
     });
   };
