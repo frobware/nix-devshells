@@ -89,6 +89,12 @@
         # Ensure rustfmt is used from nightly.
         export PATH="${nightlyRustfmt}/bin:$PATH"
 
+        # Reference a target directory that is on local storage - useful when building over NFS.
+        export CARGO_TARGET_DIR="/tmp/cargo-target-dir-$(basename "$PWD")"
+        mkdir -p "''$CARGO_TARGET_DIR"
+        ln -sf "$CARGO_TARGET_DIR" target
+        echo CARGO_TARGET_DIR=$CARGO_TARGET_DIR
+
         echo "🦀🦀🦀 Welcome to a Rust development shell 🦀🦀🦀"
         echo "Rust version: $(rustc --version)"
         echo "Nightly rustfmt version: $(rustfmt --version)"
