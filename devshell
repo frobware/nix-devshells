@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# devshell - A helper script for local testing.
+#
+# Purpose:
+#
+# This script ensures that local changes to the repository are used
+# when testing development shells, instead of fetching remote versions
+# from GitHub.
+#
+# Why do we need this?
+#
+# - Nix flakes normally fetch dependencies remotely. If you are
+#   modifying the Rust or BPF dev shells locally, you don’t want Nix
+#   to pull the GitHub versions instead of your local changes.
+#
+# - Overrides the flake inputs so that Nix uses the local `bpf/` and
+#   `rust/` subdirectories instead of the versions referenced in
+#   `flake.lock`.
+#
+# - Allows faster iteration and testing without needing to commit and
+# - push changes to GitHub.
+#
+# Usage:
+#   ./devshell <shell-name>
+#
+# Example:
+#   ./devshell rust-stable   # Launches the Rust stable dev shell
+#   ./devshell rust-nightly  # Launches the Rust nightly dev shell
+#   ./devshell bpf           # Launches the BPF dev shell
+#
+# If no argument is provided, `nix develop` will fail with an error.
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+override_args=(
+    "--override-input" "bpf" "path:$script_dir/bpf"
+    "--override-input" "rust" "path:$script_dir/rust"
+)
+
+exec nix develop "${override_args[@]}" "$script_dir#${1:-}"

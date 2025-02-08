@@ -1,108 +1,81 @@
 {
-  description = "A Rust development shell.";
-
+  description = "A flake providing Rust development shells with stable, beta, and nightly toolchains.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     systems.url = "github:nix-systems/default";
   };
-
-  outputs = { self, nixpkgs, rust-overlay, systems, ... }:
+  outputs = { self, nixpkgs, rust-overlay, ... } @ inputs:
   let
-    forEachSystem = nixpkgs.lib.genAttrs (import systems);
+    eachSystem = nixpkgs.lib.genAttrs (import inputs.systems);
 
-    mkDevShell = system:
-    let
-      overlays = [ (import rust-overlay) ];
+    mkRustDevShell = system: rustVersion: let
       pkgs = import nixpkgs {
-        inherit system overlays;
+        inherit system;
+        overlays = [ rust-overlay.overlays.default ];
       };
-
-      stableToolchain = pkgs.rust-bin.stable.latest.default.override {
-        extensions = [
-          "rust-src"
-          "rust-analyzer"
-          "clippy"
-          "rustfmt"
-          "llvm-tools-preview"
-        ];
-        targets = [
-          "x86_64-unknown-linux-gnu"
-          "wasm32-unknown-unknown"
-          "aarch64-apple-darwin"
-        ];
-      };
-
-      nightlyRustfmt = pkgs.rust-bin.nightly.latest.rustfmt;
-
-      darwinOnly = pkgs.lib.optionals pkgs.stdenv.isDarwin;
-    in
-    with pkgs; mkShell {
+      toolchain = (if rustVersion == "nightly" then
+        pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)
+      else
+        pkgs.rust-bin.${rustVersion}.latest.default);
+    in pkgs.mkShell {
       buildInputs = [
-        stableToolchain
-        nightlyRustfmt # This installs rustfmt from nightly
+        toolchain
 
-        # Build essentials.
-        clang
-        cmake
-        llvmPackages.libclang
-        mold                # Fast linker
-        ninja
-        pkg-config
+        # Build essentials
+        pkgs.clang
+        pkgs.cmake
+        pkgs.llvmPackages.libclang
+        pkgs.mold
+        pkgs.ninja
+        pkgs.pkg-config
 
-        # Development tools.
-        cargo-audit         # Security audit
-        cargo-expand        # Macro expansion
-        cargo-tarpaulin     # Code coverage
-        cargo-watch         # Auto-rebuild
-        gdb
-        lldb
-        rust-analyzer
-        valgrind
+        # Development tools
+        pkgs.llvmPackages_latest.lldb
+        pkgs.rust-analyzer
 
-        # Libraries.
-        openssl
-        openssl.dev
-        sqlite
-      ] ++ (darwinOnly [
+        # Libraries
+        pkgs.openssl
+        pkgs.openssl.dev
+        pkgs.sqlite
+      ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
         pkgs.darwin.apple_sdk.frameworks.Security
         pkgs.darwin.apple_sdk.frameworks.CoreFoundation
         pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-      ]);
+      ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+        pkgs.gdb
+        pkgs.valgrind
+      ];
+
+      env = {
+        LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+        PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+        RUST_BACKTRACE = "1";
+        RUSTFLAGS = if pkgs.stdenv.isDarwin then
+          "-C link-arg=-fuse-ld=/usr/bin/ld"
+        else
+          "-C link-arg=-fuse-ld=mold";
+      };
 
       shellHook = ''
-        if [[ "$(uname)" == "Darwin" ]]; then
-          export RUSTFLAGS="-C link-arg=-fuse-ld=/usr/bin/ld"
-        else
-          export RUSTFLAGS="-C link-arg=-fuse-ld=mold"
-        fi
-
-        # For bindgen.
-        export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
-
-        # For rust-openssl.
-        export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig"
-
-        # For better backtraces.
-        export RUST_BACKTRACE=1
-
-        # Ensure rustfmt is used from nightly.
-        export PATH="${nightlyRustfmt}/bin:$PATH"
-
         # Reference a target directory that is on local storage - useful when building over NFS.
-        export CARGO_TARGET_DIR="/tmp/cargo-target-dir-$(basename "$PWD")"
+        export CARGO_TARGET_DIR="/tmp/cargo-target-dir-''${USER:-unknown-user}-$(basename "$PWD")"
         mkdir -p "''$CARGO_TARGET_DIR"
         ln -sf "$CARGO_TARGET_DIR" target
         echo CARGO_TARGET_DIR=$CARGO_TARGET_DIR
-
-        echo "🦀🦀🦀 Welcome to a Rust development shell 🦀🦀🦀"
+        echo "🦀🦀🦀 Welcome to your Rust development shell (${rustVersion}) 🦀🦀🦀"
         echo "Rust version: $(rustc --version)"
-        echo "Nightly rustfmt version: $(rustfmt --version)"
       '';
     };
   in {
-    devShells = forEachSystem (system: {
-      default = mkDevShell system;
+    devShells = eachSystem (system: rec {
+      # Standard versioned shells
+      "rust-stable" = mkRustDevShell system "stable";
+      "rust-beta" = mkRustDevShell system "beta";
+      "rust-nightly" = mkRustDevShell system "nightly";
+      # Default shell (stable)
+      default = mkRustDevShell system "stable";
+      "rust" = default;
     });
   };
 }
