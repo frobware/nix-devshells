@@ -4,8 +4,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
-    bpf.url = "github:frobware/nix-devshells/bpf";
-    rust.url = "github:frobware/nix-devshells/rust";
+    bpf.url = "github:frobware/nix-devshells?dir=bpf";
+    rust.url = "github:frobware/nix-devshells?dir=rust";
   };
 
   outputs = { self, nixpkgs, rust, bpf, ... }@inputs:
