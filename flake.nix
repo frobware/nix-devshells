@@ -90,8 +90,8 @@
             ];
           }));
 
-      overlays = eachSystem (system: final: prev: {
-        devShells = self.devShells.${system};
-      });
+      overlays = {
+        default = final: prev: { devShells = self.devShells.${prev.system}; };
+      };
     };
 }
