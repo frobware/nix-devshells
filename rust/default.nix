@@ -26,13 +26,14 @@ in pkgs.mkShell {
   ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.gdb pkgs.valgrind ];
 
   env = {
+    LD_LIBRARY_PATH = "${pkgs.openssl.out}/lib:$LD_LIBRARY_PATH";
     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
-    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-    RUST_BACKTRACE = "1";
+    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:$PKG_CONFIG_PATH";
     RUSTFLAGS = if pkgs.stdenv.isDarwin then
       "-C link-arg=-fuse-ld=/usr/bin/ld"
     else
       "-C link-arg=-fuse-ld=mold";
+    RUST_BACKTRACE = "1";
   };
 
   shellHook = ''
