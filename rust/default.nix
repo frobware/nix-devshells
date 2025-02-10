@@ -29,7 +29,6 @@ let
     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib:$$LIBCLANG_PATH";
     PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:$$PKG_CONFIG_PATH";
     RUST_SRC_PATH = "${rawToolchain}/lib/rustlib/src/rust/library";
-    TEST = "DEBUF";
   };
 
   devShellDerivation = pkgs.mkShell {
