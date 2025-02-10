@@ -5,7 +5,7 @@
     # To override the inputs on an ad-hoc basis:
     # $ nix develop --override-input nixpkgs github:NixOS/nixpkgs/nixos-24.11 .#rust-stable
     # $ nix build --override-input nixpkgs github:NixOS/nixpkgs/nixos-24.11 .#rust-stable
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     rust-overlay.url = "github:oxalica/rust-overlay";
     systems.url = "github:nix-systems/default";
   };
