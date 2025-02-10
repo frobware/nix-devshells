@@ -23,7 +23,10 @@ let
     pathsToLink = [ "/bin" ];
   };
 
-  # Shared environment variables (NOT returned in devShells).
+  # TODO: We actually want ${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} but I
+  # couldn't get this to work; some whacky quoting needed somewhere.
+  # The message in commit e6f83660c046abd7e529902906374190ad538c76 is
+  # plain wrong. So many Nix battles to fight.
   sharedEnv = {
     LD_LIBRARY_PATH = "${pkgs.openssl.out}/lib:\$LD_LIBRARY_PATH";
     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib:\$LIBCLANG_PATH";
