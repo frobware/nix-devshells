@@ -89,5 +89,9 @@
                 '')
             ];
           }));
+
+      overlays = eachSystem (system: final: prev: {
+        devShells = self.devShells.${system};
+      });
     };
 }
