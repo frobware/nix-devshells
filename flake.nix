@@ -98,6 +98,17 @@
       # Check this locally with:
       #
       # nix eval --json .#packages | jq .
+
+      # packages = eachSystem (system:
+      #   let
+      #     pkgs = import nixpkgs {
+      #       inherit system;
+      #       overlays = [ rust-overlay.overlays.default ];
+      #     };
+      #   in {
+      #     rust-stable = pkgs.callPackage ./rust/default.nix { rustVersion = "stable"; };
+      #   });
+
       packages = eachSystem (system:
         let pkgs = nixpkgs.legacyPackages.${system};
         in nixpkgs.lib.genAttrs (builtins.attrNames (self.devShells.${system}))

@@ -1,16 +1,32 @@
 { lib, pkgs, rustVersion }:
 
 let
-  toolchain = if rustVersion == "nightly" then
-    pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)
+  # Use|find the source Luke!
+  # rustc --print sysroot | xargs -I {} find {} -name "lib.rs" | grep src
+
+  components =
+    [ "cargo" "clippy" "rust-analyzer" "rust-src" "rustc" "rustfmt" ];
+
+  rawToolchain = if rustVersion == "nightly" then
+    (pkgs.rust-bin.selectLatestNightlyWith
+      (toolchain: toolchain.default)).override { extensions = components; }
   else
-    pkgs.rust-bin.${rustVersion}.latest.default;
+    (pkgs.rust-bin.${rustVersion}.latest.default).override { extensions = components; };
+
+  # Ensure all binaries are available in a single directory. I /think/
+  # this helps fix my RustRover issues...
+  toolchain = pkgs.buildEnv {
+    name = "rust-toolchain-${rustVersion}";
+    paths = [ rawToolchain ];
+    pathsToLink = [ "/bin" ];
+  };
 
   # Shared environment variables (NOT returned in devShells).
   sharedEnv = {
     LD_LIBRARY_PATH = "${pkgs.openssl.out}/lib:$LD_LIBRARY_PATH";
     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib:$LIBCLANG_PATH";
     PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:$PKG_CONFIG_PATH";
+    RUST_SRC_PATH = "${rawToolchain}/lib/rustlib/src/rust/library";
   };
 
   # Generate shellHook to export sharedEnv variables dynamically.
@@ -29,6 +45,7 @@ let
   devShellDerivation = pkgs.mkShell {
     buildInputs = [
       toolchain
+
       pkgs.clang
       pkgs.cmake
       pkgs.llvmPackages.libclang
@@ -38,7 +55,6 @@ let
       pkgs.openssl
       pkgs.openssl.dev
       pkgs.pkg-config
-      pkgs.rust-analyzer
       pkgs.sqlite
     ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
       pkgs.darwin.apple_sdk.frameworks.Security
