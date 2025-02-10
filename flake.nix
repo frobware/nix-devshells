@@ -11,10 +11,43 @@
   };
 
   outputs = { self, nixpkgs, rust-overlay, ... }@inputs:
-    let eachSystem = nixpkgs.lib.genAttrs (import inputs.systems);
+    let
+      eachSystem = nixpkgs.lib.genAttrs (import inputs.systems);
+
+      mkRustDevShell = system: rustVersion:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ rust-overlay.overlays.default ];
+          };
+          rustConfig = import ./rust/default.nix {
+            inherit pkgs rustVersion;
+            lib = pkgs.lib;
+          };
+        in {
+          devShell = rustConfig.devShells.${rustVersion};
+          sharedEnv = rustConfig.sharedEnv;
+        };
+
     in {
+      # Expose sharedEnv separately so it can be used in Home Manager.
+      sharedEnvs = eachSystem (system:
+        let
+          rustBeta = mkRustDevShell system "beta";
+          rustNightly = mkRustDevShell system "nightly";
+          rustStable = mkRustDevShell system "stable";
+        in {
+          rust-beta = rustBeta.sharedEnv;
+          rust-nightly = rustNightly.sharedEnv;
+          rust-stable = rustStable.sharedEnv;
+        });
+
       devShells = eachSystem (system:
         let
+          rustBeta = mkRustDevShell system "beta";
+          rustNightly = mkRustDevShell system "nightly";
+          rustStable = mkRustDevShell system "stable";
+
           pkgs = import nixpkgs {
             inherit system;
             overlays = [ rust-overlay.overlays.default ];
@@ -22,13 +55,11 @@
 
           bpf = import ./bpf/default.nix { inherit pkgs; };
 
-          mkRustDevShell = rustVersion:
-            import ./rust/default.nix { inherit pkgs rustVersion; };
         in {
           bpf = bpf;
-          rust-beta = mkRustDevShell "beta";
-          rust-nightly = mkRustDevShell "nightly";
-          rust-stable = mkRustDevShell "stable";
+          rust-beta = rustBeta.devShell;
+          rust-nightly = rustNightly.devShell;
+          rust-stable = rustStable.devShell;
         });
 
       # The apps entry primarily supports nix run, allowing me to
@@ -91,7 +122,10 @@
           }));
 
       overlays = {
-        default = final: prev: { devShells = self.devShells.${prev.system}; };
+        default = final: prev: {
+          devShells = self.devShells.${prev.system};
+          sharedEnvs = self.sharedEnvs.${prev.system};
+        };
       };
     };
 }
