@@ -23,15 +23,10 @@ let
     pathsToLink = [ "/bin" ];
   };
 
-  # TODO: We actually want ${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} but I
-  # couldn't get this to work; some whacky quoting needed somewhere.
-  # The message in commit e6f83660c046abd7e529902906374190ad538c76 is
-  # plain wrong. So many Nix battles to fight.
   sharedEnv = {
-    LD_LIBRARY_PATH = "${pkgs.openssl.out}/lib:\$LD_LIBRARY_PATH";
-    LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib:\$LIBCLANG_PATH";
-    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:\$PKG_CONFIG_PATH";
-    RUST_SRC_PATH = "${rawToolchain}/lib/rustlib/src/rust/library";
+    LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.openssl ] }";
+    LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ] }";
+    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
   };
 
   devShellDerivation = pkgs.mkShell {
@@ -56,12 +51,9 @@ let
     env = sharedEnv;
 
     shellHook = ''
-      export CARGO_TARGET_DIR="/tmp/cargo-target-dir-''${USER:-unknown-user}-$(basename "$PWD")"
-      mkdir -p "$CARGO_TARGET_DIR"
-      ln -sf "$CARGO_TARGET_DIR" target
-      echo CARGO_TARGET_DIR=$CARGO_TARGET_DIR
       echo "🦀🦀🦀 Welcome to your Rust development shell (${rustVersion}) 🦀🦀🦀"
       echo "Rust version: $(rustc --version)"
+      echo "Cargo version: $(cargo --version)"
     '';
   };
 
