@@ -23,10 +23,16 @@ let
     pathsToLink = [ "/bin" ];
   };
 
-  sharedEnv = {
-    LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.openssl ] }";
-    LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ] }";
+  sharedEnv = let
+    extraRustflags = if pkgs.stdenv.isDarwin then
+      "-C link-arg=-fuse-ld=/usr/bin/ld"
+    else
+      "-C link-arg=-fuse-ld=${pkgs.mold}/bin/mold";
+  in {
+    LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.openssl ]}";
+    LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ]}";
     PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+    RUSTFLAGS = "-C link-args=-Wl,-rpath,${lib.makeLibraryPath [ pkgs.openssl ]} ${extraRustflags}";
   };
 
   devShellDerivation = pkgs.mkShell {
