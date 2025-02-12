@@ -40,6 +40,7 @@ let
       toolchain
       pkgs.clang
       pkgs.cmake
+      pkgs.diesel-cli
       pkgs.llvmPackages.libclang
       pkgs.llvmPackages_latest.lldb
       pkgs.mold
