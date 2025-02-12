@@ -4,6 +4,8 @@ let
   # Use|find the source Luke!
   # rustc --print sysroot | xargs -I {} find {} -name "lib.rs" | grep src
 
+  pkgConfigPath = packageList: lib.concatStringsSep ":" (map (pkg: "${lib.getDev pkg}/lib/pkgconfig") packageList);
+
   components =
     [ "cargo" "clippy" "rust-analyzer" "rust-src" "rustc" "rustfmt" ];
 
@@ -31,7 +33,7 @@ let
   in {
     LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.openssl ]}";
     LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ]}";
-    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.sqlite.dev}/lib/pkgconfig:";
+    PKG_CONFIG_PATH = "${pkgConfigPath [ pkgs.openssl pkgs.sqlite ]}";
     RUSTFLAGS = "-C link-args=-Wl,-rpath,${lib.makeLibraryPath [ pkgs.openssl pkgs.sqlite ]} ${extraRustflags}";
   };
 
