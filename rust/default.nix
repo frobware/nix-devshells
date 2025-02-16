@@ -51,10 +51,13 @@ let
       pkgs.openssl.dev
       pkgs.pkg-config
       pkgs.sqlite
+
+      pkgs.cargo-edit
     ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-      pkgs.darwin.apple_sdk.frameworks.Security
       pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+      pkgs.darwin.apple_sdk.frameworks.Security
       pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+      pkgs.iconv
     ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.gdb pkgs.valgrind ];
 
     env = sharedEnv;
