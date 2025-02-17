@@ -7,7 +7,7 @@ let
   pkgConfigPath = packageList: lib.concatStringsSep ":" (map (pkg: "${lib.getDev pkg}/lib/pkgconfig") packageList);
 
   components =
-    [ "cargo" "clippy" "rust-analyzer" "rust-src" "rustc" "rustfmt" ];
+    [ "cargo" "clippy" "rust-analyzer" "rust-src" "rustc" "rustfmt" "clippy-preview" ];
 
   rawToolchain = if rustVersion == "nightly" then
     (pkgs.rust-bin.selectLatestNightlyWith
@@ -33,18 +33,18 @@ let
   in {
     LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ]}";
     PKG_CONFIG_PATH = "${pkgConfigPath [ pkgs.openssl pkgs.sqlite pkgs.zlib ]}";
-    RUSTFLAGS = "-C link-args=-Wl,-rpath,${lib.makeLibraryPath [ pkgs.openssl pkgs.sqlite pkgs.zlib ]} ${extraRustflags}";
   };
 
   devShellDerivation = pkgs.mkShell {
     buildInputs = [
       toolchain
+
       pkgs.clang
       pkgs.cmake
       pkgs.diesel-cli
       pkgs.llvmPackages.libclang
       pkgs.llvmPackages_latest.lldb
-      pkgs.mold
+      pkgs.mold-wrapped
       pkgs.ninja
       pkgs.openssl
       pkgs.openssl.dev
@@ -62,7 +62,7 @@ let
     env = sharedEnv;
 
     shellHook = ''
-      echo "🦀🦀🦀 Welcome to your Rust development shell (${rustVersion}) 🦀🦀🦀"
+      echo "🦀🦀🦀 Welcome to your ${rustVersion} Rust development shell 🦀🦀🦀"
       echo "Rust version: $(rustc --version)"
       echo "Cargo version: $(cargo --version)"
     '';
