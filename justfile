@@ -51,7 +51,7 @@ test-direnv package="rust-stable": build
     "$result/bin/frobware-devshell-{{package}}-build-direnv"
 
     direnv allow .
-    direnv exec . bash -c 'env | grep ^CARGO_TARGET_DIR=' || {
-      echo "Error: CARGO_TARGET_DIR is not set in the direnv environment." >&2
+    direnv exec . bash -c 'env | grep ^PKG_CONFIG_PATH=' || {
+      echo "Error: PKG_CONFIG_PATH= is not set in the direnv environment." >&2
       exit 1
     }
