@@ -32,8 +32,8 @@ let
       "-C link-arg=-fuse-ld=${pkgs.mold}/bin/mold";
   in {
     LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ]}";
-    PKG_CONFIG_PATH = "${pkgConfigPath [ pkgs.openssl pkgs.sqlite ]}";
-    RUSTFLAGS = "-C link-args=-Wl,-rpath,${lib.makeLibraryPath [ pkgs.openssl pkgs.sqlite ]} ${extraRustflags}";
+    PKG_CONFIG_PATH = "${pkgConfigPath [ pkgs.openssl pkgs.sqlite pkgs.zlib ]}";
+    RUSTFLAGS = "-C link-args=-Wl,-rpath,${lib.makeLibraryPath [ pkgs.openssl pkgs.sqlite pkgs.zlib ]} ${extraRustflags}";
   };
 
   devShellDerivation = pkgs.mkShell {
