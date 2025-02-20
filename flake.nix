@@ -29,6 +29,20 @@
           sharedEnv = rustConfig.sharedEnv;
         };
 
+      mkRustupDevShell = system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+          };
+          rustConfig = import ./rustup/default.nix {
+            inherit pkgs;
+            lib = pkgs.lib;
+          };
+        in {
+          devShell = rustConfig.devShells.rustup;
+          sharedEnv = rustConfig.sharedEnv;
+        };
+
     in {
       # Expose sharedEnv separately so it can be used in Home Manager.
       sharedEnvs = eachSystem (system:
@@ -40,7 +54,7 @@
           rust-beta = rustBeta.sharedEnv;
           rust-nightly = rustNightly.sharedEnv;
           rust-stable = rustStable.sharedEnv;
-          rustup = {};
+          rustup = (mkRustupDevShell system).sharedEnv;
         });
 
       devShells = eachSystem (system:
@@ -55,13 +69,13 @@
           };
 
           bpf = import ./bpf/default.nix { inherit pkgs; };
-          rustup = import ./rustup/default.nix { inherit pkgs; };
+          rustup = mkRustupDevShell system;
         in {
           bpf = bpf;
           rust-beta = rustBeta.devShell;
           rust-nightly = rustNightly.devShell;
           rust-stable = rustStable.devShell;
-          rustup = rustup;
+          rustup = rustup.devShell;
         });
 
       # The apps entry primarily supports nix run, allowing me to

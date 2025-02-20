@@ -1,75 +1,36 @@
 { lib, pkgs, rustVersion }:
 
 let
-  # Use|find the source Luke!
-  # rustc --print sysroot | xargs -I {} find {} -name "lib.rs" | grep src
-
-  pkgConfigPath = packageList: lib.concatStringsSep ":" (map (pkg: "${lib.getDev pkg}/lib/pkgconfig") packageList);
+  common = import ./common.nix { inherit pkgs; };
 
   components =
     [ "cargo" "clippy" "rust-analyzer" "rust-src" "rustc" "rustfmt" "clippy-preview" ];
 
-  rawToolchain = if rustVersion == "nightly" then
+    rawToolchain = if rustVersion == "nightly" then
     (pkgs.rust-bin.selectLatestNightlyWith
-      (toolchain: toolchain.default)).override { extensions = components; }
-  else
+    (toolchain: toolchain.default)).override { extensions = components; }
+    else
     (pkgs.rust-bin.${rustVersion}.latest.default).override {
       extensions = components;
     };
 
-  # Ensure all binaries are available in a single directory. I /think/
-  # this helps fix my RustRover issues...
-  toolchain = pkgs.buildEnv {
-    name = "rust-toolchain-${rustVersion}";
-    paths = [ rawToolchain ];
-    pathsToLink = [ "/bin" ];
-  };
+    toolchain = pkgs.buildEnv {
+      name = "rust-toolchain-${rustVersion}";
+      paths = [ rawToolchain ];
+      pathsToLink = [ "/bin" ];
+    };
 
-  sharedEnv = let
-    extraRustflags = if pkgs.stdenv.isDarwin then
-      "-C link-arg=-fuse-ld=/usr/bin/ld"
-    else
-      "-C link-arg=-fuse-ld=${pkgs.mold}/bin/mold";
-  in {
-    LIBCLANG_PATH = "${lib.makeLibraryPath [ pkgs.llvmPackages.libclang.lib ]}";
-    PKG_CONFIG_PATH = "${pkgConfigPath [ pkgs.openssl pkgs.sqlite pkgs.zlib ]}";
-  };
+    devShellDerivation = pkgs.mkShell {
+      buildInputs = [ toolchain ] ++ common.buildInputs;
+      env = common.env;
 
-  devShellDerivation = pkgs.mkShell {
-    buildInputs = [
-      toolchain
-
-      pkgs.clang
-      pkgs.cmake
-      pkgs.diesel-cli
-      pkgs.llvmPackages.libclang
-      pkgs.llvmPackages_latest.lldb
-      pkgs.mold-wrapped
-      pkgs.ninja
-      pkgs.openssl
-      pkgs.openssl.dev
-      pkgs.pkg-config
-      pkgs.sqlite
-
-      pkgs.cargo-edit
-    ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-      pkgs.darwin.apple_sdk.frameworks.CoreFoundation
-      pkgs.darwin.apple_sdk.frameworks.Security
-      pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-      pkgs.iconv
-    ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.gdb pkgs.valgrind ];
-
-    env = sharedEnv;
-
-    shellHook = ''
-      echo "🦀🦀🦀 Welcome to your ${rustVersion} Rust development shell 🦀🦀🦀"
-      echo "Rust version: $(rustc --version)"
-      echo "Cargo version: $(cargo --version)"
-    '';
-  };
-
+      shellHook = ''
+        echo "🦀🦀🦀 Welcome to your ${rustVersion} Rust development shell 🦀🦀🦀"
+        echo "Rust version: $(rustc --version)"
+        echo "Cargo version: $(cargo --version)"
+      '';
+    };
 in {
   devShells = { ${rustVersion} = devShellDerivation; };
-  # Expose `sharedEnv` separately so Home Manager can use it.
-  sharedEnv = sharedEnv;
+  sharedEnv = common.env;
 }
