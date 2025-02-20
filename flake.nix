@@ -40,6 +40,7 @@
           rust-beta = rustBeta.sharedEnv;
           rust-nightly = rustNightly.sharedEnv;
           rust-stable = rustStable.sharedEnv;
+          rustup = {};
         });
 
       devShells = eachSystem (system:
@@ -54,12 +55,13 @@
           };
 
           bpf = import ./bpf/default.nix { inherit pkgs; };
-
+          rustup = import ./rustup/default.nix { inherit pkgs; };
         in {
           bpf = bpf;
           rust-beta = rustBeta.devShell;
           rust-nightly = rustNightly.devShell;
           rust-stable = rustStable.devShell;
+          rustup = rustup;
         });
 
       # The apps entry primarily supports nix run, allowing me to
@@ -91,24 +93,14 @@
       # system-wide commands.
       #
       #  nix profile install github:frobware/nix-devshells#bpf
-      #  nix profile install github:frobware/nix-devshells#rust-stable
       #  nix profile install github:frobware/nix-devshells#rust-beta
       #  nix profile install github:frobware/nix-devshells#rust-nightly
+      #  nix profile install github:frobware/nix-devshells#rust-stable
+      #  nix profile install github:frobware/nix-devshells#rustup
       #
       # Check this locally with:
       #
       # nix eval --json .#packages | jq .
-
-      # packages = eachSystem (system:
-      #   let
-      #     pkgs = import nixpkgs {
-      #       inherit system;
-      #       overlays = [ rust-overlay.overlays.default ];
-      #     };
-      #   in {
-      #     rust-stable = pkgs.callPackage ./rust/default.nix { rustVersion = "stable"; };
-      #   });
-
       packages = eachSystem (system:
         let pkgs = nixpkgs.legacyPackages.${system};
         in nixpkgs.lib.genAttrs (builtins.attrNames (self.devShells.${system}))
