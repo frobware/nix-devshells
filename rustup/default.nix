@@ -11,7 +11,15 @@ let
     shellHook = ''
       echo "🦀 Using Nix's rustup for Rust toolchains 🦀"
       echo "Rustup version: $(rustup --version)"
-      echo "Default Rust version: $(rustc --version)"
+
+      if rustc --version >/dev/null 2>&1; then
+        echo "Rustc version: $(rustc --version)"
+      else
+        echo "Warning: No Rust toolchain detected!"
+        echo "Run 'rustup default stable' to install the latest stable Rust version."
+      fi
+
+      echo "Use 'nix-rustup-install-toolchain' to install a specific Rust toolchain together with its development components."
     '';
   };
 in {

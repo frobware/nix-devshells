@@ -1,7 +1,27 @@
 { pkgs, ... }:
 
 let
+  installRustToolchainScript = pkgs.writeShellScriptBin "nix-rustup-install-toolchain" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+    toolchain="''${1:-stable}"
+    profile="''${2:-default}"
+    rustup set profile "$profile"
+    rustup toolchain install "$toolchain"
+    rustup component add \
+           clippy \
+           rust-analyzer \
+           rust-docs \
+           rust-src \
+           rust-std \
+           rustfmt \
+           --toolchain "$toolchain"
+    rustup update "$toolchain"
+  '';
+
   commonBuildInputs = [
+    installRustToolchainScript
+
     pkgs.cargo-edit
     pkgs.clang
     pkgs.cmake
@@ -32,4 +52,5 @@ let
 in {
   buildInputs = commonBuildInputs;
   env = commonEnv;
+  installRustToolchainScript = installRustToolchainScript;
 }
