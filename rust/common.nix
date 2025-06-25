@@ -38,6 +38,8 @@ let
     pkgs.sqlite.dev
     pkgs.zlib
     pkgs.zlib.dev
+    pkgs.zstd
+    pkgs.zstd.dev
   ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
     pkgs.darwin.apple_sdk.frameworks.CoreFoundation
     pkgs.darwin.apple_sdk.frameworks.Security
@@ -50,7 +52,7 @@ let
 
   commonEnv = {
     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.sqlite.dev}/lib/pkgconfig:${pkgs.zlib.dev}/lib/pkgconfig:${pkgs.elfutils.dev}/lib/pkgconfig";
+    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.sqlite.dev}/lib/pkgconfig:${pkgs.zlib.dev}/lib/pkgconfig:${pkgs.zstd.dev}/lib/pkgconfig:${pkgs.elfutils.dev}/lib/pkgconfig";
     # Help libbpf-sys find libelf headers
     C_INCLUDE_PATH = "${pkgs.elfutils.dev}/include";
     CPLUS_INCLUDE_PATH = "${pkgs.elfutils.dev}/include";
