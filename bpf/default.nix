@@ -1,12 +1,12 @@
-{ pkgs }:
+{ pkgs, ... }:
 
-if pkgs.stdenv.isLinux then
 pkgs.mkShell {
   buildInputs = [
     pkgs.just
     pkgs.bcc
     pkgs.bpftools
     pkgs.elfutils
+    pkgs.elfutils.dev
     pkgs.libbpf
     pkgs.linuxHeaders
     pkgs.llvmPackages.clang-unwrapped
@@ -14,17 +14,15 @@ pkgs.mkShell {
   hardeningDisable = [ "all" ];
   env = {
     CC = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
-    CFLAGS = "-I${pkgs.linuxHeaders}/include -I${pkgs.libbpf}/include";
+    CFLAGS = "-I${pkgs.linuxHeaders}/include -I${pkgs.libbpf}/include -I${pkgs.elfutils.dev}/include";
+    PKG_CONFIG_PATH = pkgs.lib.makeSearchPath "lib/pkgconfig" [ pkgs.libbpf pkgs.elfutils.dev ];
+    # Help libbpf-sys find libelf headers
+    C_INCLUDE_PATH = "${pkgs.elfutils.dev}/include";
+    CPLUS_INCLUDE_PATH = "${pkgs.elfutils.dev}/include";
   };
   shellHook = ''
     echo "🔧 BPF development shell initialised"
     echo "CFLAGS=$CFLAGS"
-  '';
-}
-else
-pkgs.mkShell {
-  shellHook = ''
-    echo "BPF development is only supported on Linux systems." >&2
-    exit 1
+    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
   '';
 }

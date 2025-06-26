@@ -28,6 +28,7 @@ let
         echo "🦀🦀🦀 Welcome to your ${rustVersion} Rust development shell 🦀🦀🦀"
         echo "Rust version: $(rustc --version)"
         echo "Cargo version: $(cargo --version)"
+        echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
       '';
     };
 in {
