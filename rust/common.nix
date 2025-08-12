@@ -26,6 +26,8 @@ let
     pkgs.clang
     pkgs.cmake
     pkgs.diesel-cli
+    pkgs.libiconv
+    pkgs.libiconv.dev
     pkgs.llvmPackages.libclang
     pkgs.llvmPackages_latest.lldb
     pkgs.mold-wrapped
@@ -48,6 +50,7 @@ let
   ];
 
   rustPkgConfigPaths = pkgs.lib.makeSearchPath "lib/pkgconfig" [
+    pkgs.libiconv.dev
     pkgs.openssl.dev
     pkgs.sqlite.dev
     pkgs.zlib.dev
